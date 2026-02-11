@@ -1,0 +1,6 @@
+# Add GitHub Actions secrets to .gitignore
+key.json
+*.key
+*.pem
+.env.gcp
+secrets/

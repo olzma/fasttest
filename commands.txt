@@ -1,0 +1,64 @@
+﻿
+cd C:\work\git\personal\spring-boot-fasttest; docker-compose down
+docker logs spring-boot-fasttest-app | Select-String "profile" -Context 0,1
+cd C:\work\git\personal\spring-boot-fasttest; docker-compose -f docker-compose-backend.yml up -d
+docker build -t myapp:latest -f .\docker-build.yml .
+docker images myapp
+docker run -d --name myapp-container --network spring-boot-fasttest_app-network -p 8079:8079 -e SPRING_PROFILES_ACTIVE=docker myapp:latest
+docker stop spring-boot-fasttest-app; docker rm spring-boot-fasttest-app
+docker run -d --name myapp-container --network spring-boot-fasttest_app-network -p 8079:8079 -e SPRING_PROFILES_ACTIVE=docker myapp:latest
+docker ps -a | findstr myapp
+docker ps --format "table {{.Names}}\t{{.Status}}\t{{.Ports}}"
+docker run -d --name myapp-container --network spring-boot-fasttest_app-network -p 8079:8079 -e SPRING_PROFILES_ACTIVE=docker myapp:latest 2>&1
+docker rm -f myapp-container
+docker run -d --name myapp-container --network spring-boot-fasttest_app-network -p 8079:8079 -e SPRING_PROFILES_ACTIVE=docker myapp:latest
+docker ps
+docker logs myapp-container --tail 30
+history | history.txt
+Get-History -Count 200 | % CommandLine | Out-File -Encoding utf8 .\commands.txt
+docker build -t myapp:latest -f .\docker-build.yml .
+
+# === DOCKER IMAGE EXPORT & DISTRIBUTION ===
+# Export image to TAR file (for uploading to cloud)
+docker save -o myapp-latest.tar myapp:latest
+
+# Compress TAR file to save space
+Compress-Archive -Path myapp-latest.tar -DestinationPath myapp-latest.tar.gz
+
+# Load image from TAR file (on another machine)
+docker load -i myapp-latest.tar
+
+# === DOCKER HUB DISTRIBUTION ===
+# Login to Docker Hub
+docker login
+
+# Tag image for Docker Hub (replace 'yourusername')
+docker tag myapp:latest yourusername/spring-boot-fasttest:latest
+docker tag myapp:latest yourusername/spring-boot-fasttest:v1.0.0
+
+# Push to Docker Hub
+docker push yourusername/spring-boot-fasttest:latest
+docker push yourusername/spring-boot-fasttest:v1.0.0
+
+# Pull from Docker Hub (on any machine)
+docker pull yourusername/spring-boot-fasttest:latest
+
+# === GITHUB CONTAINER REGISTRY ===
+# Tag for GitHub Container Registry (replace 'yourgithubusername')
+docker tag myapp:latest ghcr.io/yourgithubusername/spring-boot-fasttest:latest
+
+# Push to GitHub Container Registry
+docker push ghcr.io/yourgithubusername/spring-boot-fasttest:latest
+
+# === IMAGE MANAGEMENT ===
+# View all images with sizes
+docker images
+
+# View specific image details
+docker inspect myapp:latest
+
+# Remove image
+docker rmi myapp:latest
+
+# Remove all unused images
+docker image prune -a

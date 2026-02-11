@@ -1,0 +1,32 @@
+### GET request to example server
+GET https://localhost:8079
+
+###
+
+GET http://localhost:8079/api/v1/engineers/dummy
+
+###
+
+GET http://localhost:8079/api/v1/engineers
+
+###
+
+GET http://localhost:8079/api/v1/engineers/2
+
+### Create new engineer
+POST http://localhost:8079/api/v1/engineers
+Content-Type: application/json
+
+{
+  "name": "Alice Smith",
+  "techStack": "writer, influencer"
+}
+
+### Create new engineer
+POST http://localhost:8079/api/v1/engineers
+Content-Type: application/json
+
+{
+  "name": "Mark Smith",
+  "techStack": "writer, blogger"
+}

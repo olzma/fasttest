@@ -1,0 +1,27 @@
+services:
+  # Spring Boot Application Container
+  app:
+    container_name: fasttest-backend
+    image: fasttest-backend
+    build:
+      context: .
+      dockerfile: Dockerfile
+    ports:
+      - "8079:8080"
+    networks:
+      - app-network
+    environment:
+      - SPRING_PROFILES_ACTIVE=docker
+      - DB_HOST=fasttest-db
+      - SPRING_DATASOURCE_USERNAME=${POSTGRES_USER}
+      - SPRING_DATASOURCE_PASSWORD=${POSTGRES_PASSWORD}
+    restart: unless-stopped
+
+networks:
+  app-network:
+    driver: bridge
+    name: spring-boot-fasttest_app-network
+    external: true
+# docker-compose -f docker-compose-backend.yml up --build -d
+#docker-compose -f docker-compose-backend.yml up -d
+# docker logs -f fasttest-backend

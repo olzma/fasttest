@@ -1,0 +1,32 @@
+services:
+  # PostgreSQL Database Container
+  db:
+    container_name: fasttest-db
+    image: postgres:latest
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB}
+      POSTGRES_USER: ${POSTGRES_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+      PGDATA: /data/postgres
+    volumes:
+      - db:/data/postgres
+    ports:
+      - "5432:5432"
+    networks:
+      - app-network
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U fasttest -d fasttest_db"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+networks:
+  app-network:
+    driver: bridge
+    name: spring-boot-fasttest_app-network
+
+volumes:
+  db:
+
+#docker rm -f postgres-fasttest; docker volume rm fasttest-main_db; docker-compose -f docker-compose-db.yml up -d

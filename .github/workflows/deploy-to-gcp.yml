@@ -1,0 +1,112 @@
+name: Deploy to Google Cloud Run
+
+# Manual trigger for now - you can change to automatic later
+on:
+  workflow_dispatch:  # Allows manual trigger from GitHub Actions tab
+    inputs:
+      environment:
+        description: 'Environment to deploy to'
+        required: true
+        default: 'production'
+        type: choice
+        options:
+          - production
+          - staging
+
+  # Uncomment this section when you want automatic deployment on PR merge
+  # push:
+  #   branches:
+  #     - main
+  #     - master
+
+env:
+  PROJECT_ID: fastesttest
+  REGION: europe-central2
+  REPO_NAME: fasttest-repo
+  APP_NAME: spring-boot-fastesttest
+  DB_USER: fasttest
+
+jobs:
+  deploy:
+    name: Build and Deploy to Cloud Run
+    runs-on: ubuntu-latest
+
+    permissions:
+      contents: read
+      id-token: write  # Required for Workload Identity Federation
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      # Authenticate to Google Cloud using Workload Identity Federation (recommended)
+      # Alternative: Use service account key (see comments at bottom)
+      - name: Authenticate to Google Cloud
+        id: auth
+        uses: google-github-actions/auth@v2
+        with:
+          workload_identity_provider: ${{ secrets.GCP_WORKLOAD_IDENTITY_PROVIDER }}
+          service_account: ${{ secrets.GCP_SERVICE_ACCOUNT }}
+
+          # If you're using Service Account Key instead of Workload Identity:
+          # credentials_json: ${{ secrets.GCP_SA_KEY }}
+
+      - name: Set up Cloud SDK
+        uses: google-github-actions/setup-gcloud@v2
+
+      - name: Configure Docker to use gcloud as credential helper
+        run: |
+          gcloud auth configure-docker ${{ env.REGION }}-docker.pkg.dev
+
+      - name: Build and Push Docker image
+        run: |
+          IMAGE_TAG=${{ env.REGION }}-docker.pkg.dev/${{ env.PROJECT_ID }}/${{ env.REPO_NAME }}/${{ env.APP_NAME }}:${{ github.sha }}
+          IMAGE_LATEST=${{ env.REGION }}-docker.pkg.dev/${{ env.PROJECT_ID }}/${{ env.REPO_NAME }}/${{ env.APP_NAME }}:latest
+          
+          docker build -t $IMAGE_TAG -t $IMAGE_LATEST .
+          docker push $IMAGE_TAG
+          docker push $IMAGE_LATEST
+          
+          echo "IMAGE_TAG=$IMAGE_TAG" >> $GITHUB_ENV
+
+      - name: Deploy to Cloud Run
+        run: |
+          gcloud run deploy ${{ env.APP_NAME }} \
+            --image ${{ env.IMAGE_TAG }} \
+            --platform managed \
+            --region ${{ env.REGION }} \
+            --allow-unauthenticated \
+            --port 8080 \
+            --min-instances 0 \
+            --max-instances 10 \
+            --memory 512Mi \
+            --cpu 1 \
+            --timeout 300 \
+            --set-env-vars "SPRING_PROFILES_ACTIVE=gcp" \
+            --set-env-vars "SPRING_CLOUD_GCP_SQL_ENABLED=true" \
+            --set-env-vars "SPRING_CLOUD_GCP_SQL_INSTANCE_CONNECTION_NAME=${{ secrets.GCP_DB_INSTANCE_CONNECTION_NAME }}" \
+            --set-env-vars "SPRING_DATASOURCE_USERNAME=${{ env.DB_USER }}" \
+            --set-env-vars "SPRING_DATASOURCE_PASSWORD=${{ secrets.GCP_DB_PASSWORD }}" \
+            --set-env-vars "SPRING_JPA_HIBERNATE_DDL_AUTO=update" \
+            --add-cloudsql-instances ${{ secrets.GCP_DB_INSTANCE_CONNECTION_NAME }}
+
+      - name: Get Cloud Run URL
+        id: deploy-url
+        run: |
+          SERVICE_URL=$(gcloud run services describe ${{ env.APP_NAME }} \
+            --region ${{ env.REGION }} \
+            --format 'value(status.url)')
+          echo "Service deployed at: $SERVICE_URL"
+          echo "service_url=$SERVICE_URL" >> $GITHUB_OUTPUT
+
+      - name: Test deployment
+        run: |
+          sleep 10
+          curl -f ${{ steps.deploy-url.outputs.service_url }} || echo "Health check failed"
+
+    outputs:
+      service_url: ${{ steps.deploy-url.outputs.service_url }}
+      image_tag: ${{ env.IMAGE_TAG }}
