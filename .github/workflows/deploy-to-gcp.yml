@@ -90,6 +90,7 @@ jobs:
             --set-env-vars "SPRING_CLOUD_GCP_SQL_ENABLED=true" \
             --set-env-vars "SPRING_CLOUD_GCP_SQL_INSTANCE_CONNECTION_NAME=${{ secrets.GCP_DB_INSTANCE_CONNECTION_NAME }}" \
             --set-env-vars "SPRING_DATASOURCE_USERNAME=${{ env.DB_USER }}" \
+            --set-env-vars SPRING_CLOUD_GCP_SQL_DATABASE_NAME=fasttest-db \
             --set-env-vars "SPRING_DATASOURCE_PASSWORD=${{ secrets.GCP_DB_PASSWORD }}" \
             --set-env-vars "SPRING_JPA_HIBERNATE_DDL_AUTO=update" \
             --add-cloudsql-instances ${{ secrets.GCP_DB_INSTANCE_CONNECTION_NAME }}

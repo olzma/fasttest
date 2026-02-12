@@ -77,6 +77,19 @@
                 <type>pom</type>
                 <scope>import</scope>
             </dependency>
+            <!-- Cloud SQL PostgreSQL Socket Factory -->
+            <dependency>
+                <groupId>com.google.cloud.sql</groupId>
+                <artifactId>postgres-socket-factory</artifactId>
+                <version>1.15.0</version>
+            </dependency>
+
+            <!-- Cloud SQL JDBC Socket Factory (required) -->
+            <dependency>
+                <groupId>com.google.cloud.sql</groupId>
+                <artifactId>jdbc-socket-factory-core</artifactId>
+                <version>1.15.0</version>
+            </dependency>
         </dependencies>
     </dependencyManagement>
 
