@@ -63,13 +63,14 @@ jobs:
 
       - name: Build and Push Docker image
         run: |
-          IMAGE_TAG=${{ env.REGION }}-docker.pkg.dev/${{ env.PROJECT_ID }}/${{ env.REPO_NAME }}/${{ env.APP_NAME }}:${{ github.sha }}
+          TIMESTAMP=$(date +%Y%m%d-%H%M%S)
+          IMAGE_TAG=${{ env.REGION }}-docker.pkg.dev/${{ env.PROJECT_ID }}/${{ env.REPO_NAME }}/${{ env.APP_NAME }}:${{ github.sha }}-${TIMESTAMP}
           IMAGE_LATEST=${{ env.REGION }}-docker.pkg.dev/${{ env.PROJECT_ID }}/${{ env.REPO_NAME }}/${{ env.APP_NAME }}:latest
-          
+      
           docker build -t $IMAGE_TAG -t $IMAGE_LATEST .
           docker push $IMAGE_TAG
-          docker push $IMAGE_LATEST
-          
+          docker push $IMAGE_LATEST || echo "Latest tag push failed (expected if immutable)"
+      
           echo "IMAGE_TAG=$IMAGE_TAG" >> $GITHUB_ENV
 
       - name: Deploy to Cloud Run
